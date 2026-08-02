@@ -1,284 +1,376 @@
-import React, { useState, useEffect, useRef } from 'react';
+// src/components/ChronoTracker.jsx
+
+import React, { useState, useEffect } from 'react';
 import './ChronoTracker.css';
 
 const ChronoTracker = () => {
-    // --- STATE MANAGEMENT ---
-    // Initialize logs from localStorage, or default to an empty array
-    const [logs, setLogs] = useState(() => {
-        const savedLogs = localStorage.getItem('chriscamChronoLogs');
-        return savedLogs ? JSON.parse(savedLogs) : [];
-    });
+  // --- STATE MANAGEMENT WITH LOCAL STORAGE ---
+  const [logs, setLogs] = useState(() => {
+    const savedLogs = localStorage.getItem('chronoLogs');
+    return savedLogs ? JSON.parse(savedLogs) : [];
+  });
 
-    // NEW: Track the currently active quick-action code. 
-    // Pulls from localStorage so a cheeky page refresh doesn't wipe your active status!
-    const [activeAction, setActiveAction] = useState(() => {
-        return localStorage.getItem('chronoActiveAction') || null;
-    });
+  const [activeSession, setActiveSession] = useState(() => {
+    const savedSession = localStorage.getItem('chronoActiveSession');
+    return savedSession ? JSON.parse(savedSession) : null;
+  }); 
 
-    const [inputValue, setInputValue] = useState("");
-    const [isDarkMode, setIsDarkMode] = useState(true);
-    const logsEndRef = useRef(null);
+  const [isLightMode, setIsLightMode] = useState(() => {
+    const savedTheme = localStorage.getItem('chronoTheme');
+    return savedTheme ? JSON.parse(savedTheme) : false;
+  });
 
-    // --- SIDE EFFECTS ---
-    // Sync logs to local storage
-    useEffect(() => {
-        localStorage.setItem('chriscamChronoLogs', JSON.stringify(logs));
-    }, [logs]);
+  // NEW: State to track if we are in true Fullscreen mode
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const [customInput, setCustomInput] = useState('');
+  const [now, setNow] = useState(Date.now());
 
-    // NEW: Sync the active action state to local storage
-    useEffect(() => {
-        if (activeAction) {
-            localStorage.setItem('chronoActiveAction', activeAction);
-        } else {
-            localStorage.removeItem('chronoActiveAction');
-        }
-    }, [activeAction]);
+  // --- LOCAL STORAGE EFFECTS ---
+  useEffect(() => localStorage.setItem('chronoLogs', JSON.stringify(logs)), [logs]);
+  useEffect(() => localStorage.setItem('chronoActiveSession', JSON.stringify(activeSession)), [activeSession]);
+  useEffect(() => localStorage.setItem('chronoTheme', JSON.stringify(isLightMode)), [isLightMode]);
 
-    // Auto-scroll to the newest log entry
-    useEffect(() => {
-        if (logsEndRef.current) {
-            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [logs]);
+  // --- LIFECYCLE HOOKS ---
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-    // --- CORE LOGIC ---
-    // The master function for creating a new timestamp entry
-    const logEvent = (type, defaultComment = "") => {
-        const timeString = new Date().toLocaleTimeString('en-US', { 
-            hour12: true, 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
-        });
-        
-        const commentToLog = inputValue.trim() !== "" ? inputValue.trim() : defaultComment;
+  // NEW: Effect to listen for fullscreen changes (like pressing ESC)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
+  // --- FULLSCREEN LOGIC ---
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  // --- LOGGING FUNCTIONS ---
+  const addBasicLog = (code) => {
+    const finalCode = customInput.trim() ? `${code} - ${customInput.trim()}` : code;
+    
+    const newLog = {
+      id: crypto.randomUUID(), 
+      code: finalCode,
+      category: code, 
+      timestamp: Date.now(),
+      type: 'basic',
+      editCount: 0,
+      originalTime: null,
+    };
+    setLogs((prev) => [...prev, newLog]);
+    setCustomInput(''); 
+  };
+
+  const handleQuickAction = (code) => {
+    const note = customInput.trim() ? ` - ${customInput.trim()}` : '';
+    
+    if (activeSession) {
+      if (activeSession.code === code) {
         const newLog = {
-            id: Date.now(), 
-            type: type,
-            time: timeString,
-            comment: commentToLog
+          id: crypto.randomUUID(),
+          code: `${code}${note} (End)`,
+          category: code, 
+          timestamp: Date.now(),
+          type: 'session-end',
+          sessionId: activeSession.sessionId,
+          editCount: 0,
+          originalTime: null,
         };
+        setLogs((prev) => [...prev, newLog]);
+        setActiveSession(null); 
+        setCustomInput(''); 
+      } else {
+        alert(`You are currently logged out for '${activeSession.code}'. Finish that session before going into '${code}'`);
+      }
+    } else {
+      const sessionId = crypto.randomUUID();
+      setActiveSession({ code, sessionId });
+      const newLog = {
+        id: crypto.randomUUID(),
+        code: `${code}${note} (Start)`,
+        category: code, 
+        timestamp: Date.now(),
+        type: 'session-start',
+        sessionId: sessionId,
+        editCount: 0,
+        originalTime: null,
+      };
+      setLogs((prev) => [...prev, newLog]);
+      setCustomInput(''); 
+    }
+  };
 
-        setLogs([...logs, newLog]);
-        setInputValue(""); 
-    };
+  const handleCustomSubmit = (e) => {
+    if (e.key === 'Enter' && customInput.trim() !== '') {
+      const newLog = {
+        id: crypto.randomUUID(),
+        code: customInput.trim(),
+        category: 'Custom',
+        timestamp: Date.now(),
+        type: 'basic',
+        editCount: 0,
+        originalTime: null,
+      };
+      setLogs((prev) => [...prev, newLog]);
+      setCustomInput('');
+    }
+  };
 
-    // --- BUTTON HANDLERS (The New Babysitters) ---
-    // Handles clicks on the standard Log In button
-    const handleStandardLogin = () => {
-        if (activeAction) {
-            // Yell at the user for trying to bypass the active code
-            alert(`Warning! You are currently clocked out for [${activeAction.split(' - ')[0]}]. Click the active flashing button to log back in properly!`);
-        } else {
-            logEvent('Login', 'Session Start');
-        }
-    };
+  // --- EDITING LOGIC ---
+  const editLogText = (id) => {
+    const log = logs.find((l) => l.id === id);
+    if (!log) return;
+    const newCode = window.prompt("Edit your log text:", log.code);
+    if (newCode && newCode.trim() !== "") {
+      setLogs((prev) => prev.map((l) => l.id === id ? { ...l, code: newCode.trim() } : l));
+    }
+  };
 
-    // Handles clicks on our Quick Action buttons
-    const handleQuickAction = (type, defaultComment) => {
-        if (activeAction === defaultComment) {
-            // If the clicked button is the currently active one, log a return event and clear the state
-            logEvent('Login', `Returned from ${defaultComment.split(' - ')[0]}`);
-            setActiveAction(null);
-        } else if (activeAction !== null) {
-            // If they try to click a DIFFERENT quick action while one is already active
-            alert(`Hold your horses! You're already clocked out for [${activeAction.split(' - ')[0]}]. You must return from that first before starting something else.`);
-        } else {
-            // Standard departure: log the event and set the button as active
-            logEvent(type, defaultComment);
-            setActiveAction(defaultComment);
-        }
-    };
+  const editLogTime = (id) => {
+    const log = logs.find((l) => l.id === id);
+    if (!log) return;
+    
+    if (log.editCount >= 2) {
+      alert("Maximum of two time edits allowed! We aren't running a time machine here!");
+      return;
+    }
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            logEvent('Custom');
-        }
-    };
-
-    const clearLogs = () => {
-        if (window.confirm("Are you entirely sure you want to bin today's logs? This cannot be undone!")) {
-            setLogs([]);
-            setActiveAction(null); // Also clear any stuck active states just in case
-        }
-    };
-
-    // --- EXPORT LOGIC ---
-    const exportLogs = () => {
-        if (logs.length === 0) {
-            alert("Nothing to export yet, mate. Log some times first!");
-            return;
-        }
-
-        let textContent = "Chrono Tracker - Shift Logs\n=================================\n\n";
-        logs.forEach(log => {
-            textContent += `[${log.type.toUpperCase()}] ${log.time} - Note: ${log.comment || 'N/A'}\n`;
-        });
-
-        const blob = new Blob([textContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
+    const currentDate = new Date(log.timestamp);
+    const currentHours = String(currentDate.getHours()).padStart(2, '0');
+    const currentMinutes = String(currentDate.getMinutes()).padStart(2, '0');
+    
+    const newTimeStr = window.prompt(
+      "Enter new time in 24-hour format (HH:MM):", 
+      `${currentHours}:${currentMinutes}`
+    );
+    
+    if (newTimeStr) {
+      const [hours, minutes] = newTimeStr.split(':');
+      if (hours && minutes && !isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+        const newTimestamp = new Date(currentDate).setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
         
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10); 
-        const timeStr = now.toTimeString().slice(0, 5).replace(':', ''); 
-        const fileName = `ChronoTracker_Logs_${dateStr}_${timeStr}.txt`;
+        setLogs((prev) => prev.map((l) => {
+          if (l.id === id) {
+            return {
+              ...l,
+              timestamp: newTimestamp,
+              originalTime: l.originalTime || l.timestamp,
+              editCount: l.editCount + 1
+            };
+          }
+          return l;
+        }));
+      } else {
+        alert("That's an invalid time format. Please use HH:MM (e.g., 14:30).");
+      }
+    }
+  };
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
+  // --- DELETION & EXPORTING ---
+  const deleteLog = (id) => {
+    if (window.confirm("Are you absolutely sure you want to delete this punch? It will be gone forever!")) {
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+    }
+  };
 
-    // --- RENDER LOGIC ---
-    // Stitches departure and return codes together visually
-    const renderLogs = () => {
-        const displayElements = [];
-        
-        for (let i = 0; i < logs.length; i++) {
-            const log = logs[i];
-            
-            const isDeparture = !['Login', 'Notes', 'Custom'].includes(log.type);
-            const hasNextLogin = i + 1 < logs.length && logs[i + 1].type === 'Login';
+  const clearLogs = () => {
+    if (window.confirm("Nuke all logs? You can't undo this!")) {
+      setLogs([]);
+      setActiveSession(null); 
+    }
+  };
 
-            if (isDeparture && hasNextLogin) {
-                const returnLog = logs[i + 1];
-                displayElements.push(
-                    <div key={`group-${log.id}`} className="log-group">
-                        <div className="log-entry grouped-entry">
-                            <span className="log-time">{log.time}</span>
-                            <span className="log-type">[{log.type}]</span>
-                            <span className="log-comment">{log.comment} (Out)</span>
-                        </div>
-                        <div className="log-connection">⮑</div>
-                        <div className="log-entry grouped-entry">
-                            <span className="log-time">{returnLog.time}</span>
-                            <span className="log-type">[Login]</span>
-                            <span className="log-comment">{returnLog.comment || 'Session Resumed'} (In)</span>
-                        </div>
-                    </div>
-                );
-                i++; 
-            } else {
-                displayElements.push(
-                    <div key={log.id} className={`log-entry type-${log.type.toLowerCase()}`}>
-                        <span className="log-time">{log.time}</span>
-                        <span className="log-type">[{log.type}]</span>
-                        <span className="log-comment">{log.comment}</span>
-                    </div>
-                );
-            }
-        }
-        return displayElements;
-    };
+  const handleExport = () => {
+    if (logs.length === 0) {
+      alert("There is nothing to export. Log some time first!");
+      return;
+    }
 
-    const todayStr = new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+    let fileContent = "Chrono Tracker Logs\n";
+    fileContent += `Date: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n`;
+    fileContent += "===================================\n\n";
+
+    logs.forEach(log => {
+      const timeString = formatTimestamp(log.timestamp);
+      fileContent += `[${timeString}] ${log.code}`;
+      if (log.originalTime) {
+        const origTimeStr = formatTimestamp(log.originalTime);
+        fileContent += ` (Edited, originally: ${origTimeStr})`;
+      }
+      fileContent += "\n";
     });
 
-    return (
-        <div className={`chrono-wrapper ${isDarkMode ? 'dark' : 'light'}`}>
-            <header className="chrono-header">
-                <h1>Chrono Tracker</h1>
-                <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
-                    {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                </button>
-            </header>
+    fileContent += "\n===================================\n";
+    fileContent += "TOTALS:\n";
+    const currentTotals = calculateTotals();
+    
+    Object.entries(currentTotals).forEach(([code, ms]) => {
+      fileContent += `${code}: ${formatDuration(ms)}\n`;
+    });
 
-            <main className="chrono-main">
-                <section className="chrono-controls">
-                    <input 
-                        type="text" 
-                        className="chrono-input" 
-                        placeholder="Type a custom code or note..." 
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                    />
-                    
-                    <div className="button-group standard-actions">
-                        <button onClick={handleStandardLogin}>Log In</button>
-                        <button onClick={() => logEvent('Logout', 'Session End')}>Log Out</button>
-                    </div>
+    const blob = new Blob([fileContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Chrono_Logs_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
-                    <h3 className="section-title">Quick Actions</h3>
-                    <div className="button-group quick-actions">
-                        <button 
-                            className={activeAction === 'BR1 - First Break' ? 'active-action' : ''} 
-                            onClick={() => handleQuickAction('Break', 'BR1 - First Break')}
-                        >
-                            {activeAction === 'BR1 - First Break' ? '🔴 Break 1 (Active)' : 'Break 1'}
-                        </button>
-                        <button 
-                            className={activeAction === 'LUN - Lunch' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Lunch', 'LUN - Lunch')}
-                        >
-                            {activeAction === 'LUN - Lunch' ? '🔴 Lunch (Active)' : 'Lunch'}
-                        </button>
-                        <button 
-                            className={activeAction === 'BR2 - Last Break' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Break', 'BR2 - Last Break')}
-                        >
-                            {activeAction === 'BR2 - Last Break' ? '🔴 Break 2 (Active)' : 'Break 2'}
-                        </button>
-                        <button 
-                            className={activeAction === 'USB/RR - Unscheduled/Restroom' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Restroom', 'USB/RR - Unscheduled/Restroom')}
-                        >
-                            {activeAction === 'USB/RR - Unscheduled/Restroom' ? '🔴 USB/RR (Active)' : 'USB/RR'}
-                        </button>
-                        <button 
-                            className={activeAction === 'TRA - Training' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Training', 'TRA - Training')}
-                        >
-                            {activeAction === 'TRA - Training' ? '🔴 Training (Active)' : 'Training'}
-                        </button>
-                        <button 
-                            className={activeAction === 'MEE - Meeting' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Meeting', 'MEE - Meeting')}
-                        >
-                            {activeAction === 'MEE - Meeting' ? '🔴 Meeting (Active)' : 'Meeting'}
-                        </button>
-                        <button 
-                            className={activeAction === 'CAN - Case Notes' ? 'active-action' : ''}
-                            onClick={() => handleQuickAction('Notes', 'CAN - Case Notes')}
-                        >
-                            {activeAction === 'CAN - Case Notes' ? '🔴 Case Notes (Active)' : 'Case Notes'}
-                        </button>
-                    </div>
+  // --- CALCULATION HELPERS ---
+  const calculateTotals = () => {
+    const trackedCodes = ['Case Notes', 'USB/RR', 'IT Issues', 'Meeting', 'Training', 'Outbound Call'];
+    const totals = trackedCodes.reduce((acc, code) => ({ ...acc, [code]: 0 }), {});
 
-                    <div className="button-group utility-actions">
-                        <button className="btn-export" onClick={exportLogs}>Export to .TXT</button>
-                        <button className="btn-clear" onClick={clearLogs}>Clear Logs</button>
-                    </div>
-                </section>
+    const startLogs = logs.filter(l => l.type === 'session-start');
+    
+    startLogs.forEach(startLog => {
+      const baseCode = startLog.category || startLog.code.replace(' (Start)', '').split(' - ')[0];
+      
+      if (trackedCodes.includes(baseCode)) {
+        const endLog = logs.find(l => l.sessionId === startLog.sessionId && l.type === 'session-end');
+        const endTime = endLog ? endLog.timestamp : now;
+        totals[baseCode] += Math.max(0, endTime - startLog.timestamp);
+      }
+    });
 
-                <section className="chrono-display">
-                    <div className="display-header">
-                        <h2>{todayStr}</h2>
-                    </div>
-                    <div className="logs-container">
-                        {logs.length === 0 ? (
-                            <p className="empty-state">No logs yet. Better get to work!</p>
-                        ) : (
-                            renderLogs()
-                        )}
-                        <div ref={logsEndRef} />
-                    </div>
-                </section>
-            </main>
+    return totals;
+  };
 
-            <footer className="chrono-footer">
-                <p>Designed and Developed by <a href="https://chriscam.pro" target="_blank" rel="noopener noreferrer">Christopher Cameron Tow</a></p>
-            </footer>
+  const formatDuration = (ms) => {
+    const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  };
+
+  const formatTimestamp = (ts) => {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const totals = calculateTotals();
+
+  return (
+    <div className={`chrono-tracker-wrapper ${isLightMode ? 'light-theme' : ''}`}>
+      <div className="control-panel">
+        <div className="header">
+          <h2>Chrono Tracker</h2>
+          <div className="header-actions">
+            {/* NEW: The Full Window Toggle Button! */}
+            <button className="theme-toggle" onClick={toggleFullScreen}>
+              {isFullscreen ? '◫ Exit Full Screen' : '⛶ Full Window'}
+            </button>
+            <button className="theme-toggle" onClick={() => setIsLightMode(!isLightMode)}>
+              {isLightMode ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            </button>
+          </div>
         </div>
-    );
+
+        <input 
+          type="text" 
+          placeholder="Type a custom code or note..." 
+          className="custom-input"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={handleCustomSubmit}
+        />
+
+        <div className="auth-buttons">
+          <button onClick={() => addBasicLog('Log In')}>Log In</button>
+          <button onClick={() => addBasicLog('Log Out')}>Log Out</button>
+        </div>
+
+        <h3 className="section-title">Quick Actions</h3>
+        
+        <div className="quick-actions-grid">
+          {['Break 1', 'Lunch', 'Break 2', 'USB/RR', 'Training', 'Meeting', 'IT Issues', 'Case Notes', 'Outbound Call'].map(code => {
+            const isActive = activeSession?.code === code;
+            return (
+              <button 
+                key={code}
+                onClick={() => handleQuickAction(code)}
+                className={isActive ? 'active-session-btn' : ''}
+              >
+                {isActive ? `End ${code}` : code}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="totals-display">
+          <h4>Active Totals</h4>
+          <ul>
+            <li>Case Notes: <span>{formatDuration(totals['Case Notes'])}</span></li>
+            <li>Outbound Call: <span>{formatDuration(totals['Outbound Call'])}</span></li>
+            <li>USB/RR: <span>{formatDuration(totals['USB/RR'])}</span></li>
+            <li>IT Issues: <span>{formatDuration(totals['IT Issues'])}</span></li>
+            <li>Meeting: <span>{formatDuration(totals['Meeting'])}</span></li>
+            <li>Training: <span>{formatDuration(totals['Training'])}</span></li>
+          </ul>
+        </div>
+
+        <div className="footer-actions">
+          <button className="export-btn" onClick={handleExport}>Export to .TXT</button>
+          <button className="clear-btn" onClick={clearLogs}>Clear Logs</button>
+        </div>
+      </div>
+
+      <div className="log-panel">
+        <div className="date-header">
+          {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+        </div>
+        
+        <div className="log-entries">
+          {logs.length === 0 ? (
+            <p className="empty-state">No logs yet. Better get to work!</p>
+          ) : (
+            <ul>
+              {logs.map((log) => {
+                const isSession = log.type === 'session-start' || log.type === 'session-end';
+                return (
+                  <li key={log.id} className={`log-item ${isSession ? 'session-linked' : ''}`}>
+                    <div className="log-info">
+                        <span className="log-time">{formatTimestamp(log.timestamp)}</span>
+                        <span className="log-code">{log.code}</span>
+                        
+                        {log.originalTime && (
+                          <span className="time-edit-note">
+                            (changed from {formatTimestamp(log.originalTime)})
+                          </span>
+                        )}
+                    </div>
+                    
+                    <div className="log-actions">
+                      <button onClick={() => editLogTime(log.id)} className="time-btn" title="Edit Time">⏱️</button>
+                      <button onClick={() => editLogText(log.id)} className="edit-btn">Edit</button>
+                      <button onClick={() => deleteLog(log.id)} className="delete-btn">X</button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ChronoTracker;

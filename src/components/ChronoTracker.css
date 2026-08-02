@@ -1,283 +1,371 @@
-/* --- CSS VARIABLES FOR THEME SWITCHING --- */
-.chrono-wrapper {
-    /* Default Dark Mode Variables */
-    --bg-primary: #121212;
-    --bg-secondary: #1e1e1e;
-    --bg-tertiary: #2c2c2c;
-    --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
-    --accent-color: #ff9800; /* A sharp orange pop */
-    --accent-hover: #ffb74d;
-    --btn-danger: #cf6679;
-    --btn-danger-hover: #ef9a9a;
-    --btn-success: #03dac6;
-    --btn-success-hover: #80cbc4;
-    --border-color: #333333;
+/* src/components/ChronoTracker.css */
 
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    transition: background-color 0.3s ease, color 0.3s ease;
+/* --- BASE STYLES (DARK MODE BY DEFAULT) --- */
+.chrono-tracker-wrapper {
+    width: 74vw;
+  display: flex;
+  flex-direction: column; 
+  min-height: 100vh;      
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background-color 0.3s, color 0.3s; 
 }
 
-/* Light Mode Overrides */
-.chrono-wrapper.light {
-    --bg-primary: #f5f7fa;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e4e7eb;
-    --text-primary: #2d3748;
-    --text-secondary: #4a5568;
-    --accent-color: #3182ce; /* A crisp blue */
-    --accent-hover: #2b6cb0;
-    --btn-danger: #e53e3e;
-    --btn-danger-hover: #c53030;
-    --btn-success: #38a169;
-    --btn-success-hover: #2f855a;
-    --border-color: #cbd5e0;
+/* LEFT PANEL */
+.control-panel {
+  flex: 1;
+  padding: 20px;
+  background-color: #242424;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-right: none;
+  border-bottom: 2px solid #ff9800; 
+  transition: background-color 0.3s;
 }
 
-/* --- LAYOUT & STRUCTURE --- */
-.chrono-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background-color: var(--bg-secondary);
-    border-bottom: 2px solid var(--accent-color);
+/* RIGHT PANEL */
+.log-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #121212;
+  transition: background-color 0.3s;
 }
 
-.chrono-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    letter-spacing: 1px;
+/* --- HEADER & INPUT --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  color: #ff9800; 
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .theme-toggle {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s ease;
+  background: transparent;
+  border: 1px solid #777;
+  color: inherit;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  transition: background 0.2s;
 }
-
 .theme-toggle:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.chrono-main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+.custom-input {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: white;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* --- LEFT PANEL: CONTROLS --- */
-.chrono-controls {
-    flex: 1;
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    overflow-y: auto;
-    border-right: 1px solid var(--border-color);
+/* --- BUTTONS --- */
+.auth-buttons {
+  display: flex;
+  gap: 10px;
 }
-
-.chrono-input {
-    width: 93%;
-    padding: 1rem;
-    font-size: 1.1rem;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    margin-bottom: 1.5rem;
-    transition: border-color 0.2s ease;
+.auth-buttons button {
+  flex: 1;
+  padding: 10px;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out; 
 }
-
-.chrono-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
+.auth-buttons button:hover {
+  background: #555; 
 }
 
 .section-title {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
 }
 
-.button-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 10px;
+}
+.quick-actions-grid button {
+  padding: 12px 5px;
+  background: #3a3a3a;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.quick-actions-grid button:hover {
+  background: #555;
 }
 
-.button-group button {
-    flex: 1 1 calc(50% - 0.75rem);
-    padding: 0.75rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease;
+/* Active Session Pulse Effect */
+.quick-actions-grid button.active-session-btn {
+  background: #ff9800 !important; 
+  color: #000 !important;
+  animation: pulse 2s infinite;
 }
 
-.quick-actions button {
-    flex: 1 1 calc(33% - 0.75rem);
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
 }
 
-.button-group button:hover {
-    background-color: var(--accent-color);
-    color: white;
-    transform: translateY(-2px);
+/* --- TOTALS & FOOTER --- */
+.totals-display {
+  background: #1e1e1e;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  margin-top: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.totals-display h4 {
+  margin: 0 0 10px 0;
+  color: #ff9800;
+}
+.totals-display ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.totals-display li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px dashed #333;
 }
 
-.utility-actions {
-    margin-top: 3rem;
+.footer-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto; 
+}
+.export-btn, .clear-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.export-btn:hover, .clear-btn:hover {
+  opacity: 0.8;
+}
+.export-btn {
+  background: #00d2d3;
+  color: #000;
+}
+.clear-btn {
+  background: #ff6b6b;
+  color: #fff;
 }
 
-.btn-export {
-    background-color: var(--btn-success) !important;
-    color: white !important;
+/* --- RIGHT PANEL LOG ENTRIES --- */
+.date-header {
+  background: #ff9800;
+  color: #000;
+  text-align: center;
+  padding: 15px;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
-.btn-export:hover {
-    background-color: var(--btn-success-hover) !important;
+.log-entries {
+  padding: 20px;
+  overflow-y: auto;
 }
-
-.btn-clear {
-    background-color: var(--btn-danger) !important;
-    color: white !important;
-}
-
-.btn-clear:hover {
-    background-color: var(--btn-danger-hover) !important;
-}
-
-/* --- RIGHT PANEL: DISPLAY --- */
-.chrono-display {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-primary);
-}
-
-.display-header {
-    background-color: var(--accent-color);
-    color: white;
-    text-align: center;
-    padding: 1rem;
-}
-
-.display-header h2 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.logs-container {
-    flex: 1;
-    padding: 1.5rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
 .empty-state {
-    text-align: center;
-    color: var(--text-secondary);
-    font-style: italic;
-    margin-top: 2rem;
+  text-align: center;
+  font-style: italic;
+  color: #777;
 }
 
-.log-entry {
-    display: flex;
-    gap: 1rem;
-    padding: 0.75rem;
-    background-color: var(--bg-secondary);
-    border-radius: 6px;
-    border-left: 4px solid var(--accent-color);
-    animation: fadeIn 0.3s ease-in-out;
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e1e1e;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border-left: 4px solid #ff9800; 
+  transition: background-color 0.3s;
+}
+
+.log-item.session-linked {
+  border-left-width: 6px;
+  border-left-color: #00d2d3; 
+}
+
+.log-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .log-time {
-    font-weight: bold;
-    color: var(--accent-color);
-    min-width: 100px;
+  color: #aaa;
+  font-family: monospace;
+}
+.log-code {
+  font-weight: bold;
+  color: #fff;
+}
+.time-edit-note {
+  font-size: 0.8rem;
+  color: #ff9800;
+  font-style: italic;
 }
 
-.log-type {
-    font-weight: bold;
-    color: var(--text-secondary);
-    min-width: 80px;
+.log-actions {
+  display: flex;
+  gap: 8px;
 }
 
-.log-comment {
+.time-btn, .edit-btn, .delete-btn {
+  background: #333;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s, color 0.2s;
+}
+.time-btn:hover { background: #00d2d3; color: #000; }
+.edit-btn:hover { background: #555; }
+.delete-btn:hover { background: #ff4757; }
+
+/* TABLET AND DESKTOP FIXES */
+@media (min-width: 1100px) {
+  .chrono-tracker-wrapper {
+    flex-direction: row;      
+    height: 100vh;            
+    overflow: hidden;
+  }
+  
+  .control-panel {
+    flex: 0 0 450px;         
+    border-right: 2px solid #ff9800;
+    border-bottom: none;
+    overflow-y: auto;         
+  }
+
+  .log-entries {
     flex: 1;
+    overflow-y: scroll; 
+  }
 }
 
-/* --- FOOTER --- */
-.chrono-footer {
-    text-align: center;
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9rem;
+/* 🌟 ==================================== 🌟 */
+/* 🌟        LIGHT MODE OVERRIDES        🌟 */
+/* 🌟 ==================================== 🌟 */
+
+.light-theme {
+  background-color: #f5f5f5;
+  color: #333;
 }
 
-.chrono-footer a {
-    color: var(--accent-color);
-    text-decoration: none;
-    font-weight: bold;
+.light-theme .control-panel {
+  background-color: #ffffff;
 }
 
-.chrono-footer a:hover {
-    text-decoration: underline;
+.light-theme .log-panel {
+  background-color: #eaeaea;
 }
 
-/* Simple animation for new logs */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateX(-10px); }
-    to { opacity: 1; transform: translateX(0); }
+.light-theme .custom-input {
+  background: #f0f0f0;
+  color: #000;
+  border: 1px solid #ccc;
+}
+.light-theme .custom-input::placeholder {
+  color: #777;
 }
 
-/* Responsive layout for smaller screens */
-@media screen and (max-width: 768px) {
-    .chrono-main {
-        flex-direction: column;
-    }
-    .chrono-controls, .chrono-display {
-        flex: none;
-        height: 50%;
-    }
+/* FIX: Ensure the header toggle buttons have dark text in light mode! */
+.light-theme .theme-toggle {
+  border-color: #ccc;
+  color: #333; 
+}
+.light-theme .theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-/* --- ACTIVE QUICK ACTION STATE --- */
-.active-action {
-    background-color: var(--btn-danger) !important;
-    color: white !important;
-    border: 2px solid white !important;
-    animation: pulseActive 2s infinite ease-in-out;
-    transform: scale(1.02);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+/* FIX: Ensure the "Quick Actions" title isn't invisible! */
+.light-theme .section-title {
+  border-bottom-color: #ccc;
+  color: #333; 
 }
 
-@keyframes pulseActive {
-    0% {
-        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(229, 62, 62, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
-    }
+.light-theme .auth-buttons button,
+.light-theme .quick-actions-grid button,
+.light-theme .time-btn,
+.light-theme .edit-btn,
+.light-theme .delete-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.light-theme .auth-buttons button:hover,
+.light-theme .quick-actions-grid button:hover,
+.light-theme .edit-btn:hover {
+  background: #ccc;
+}
+
+.light-theme .time-btn:hover { background: #00d2d3; color: #000; }
+.light-theme .delete-btn:hover { background: #ff4757; color: white; }
+
+/* FIX: Active Totals are now visible! */
+.light-theme .totals-display {
+  background: #f9f9f9;
+  border-color: #ddd;
+  color: #333; /* Ensures all text defaults to dark */
+}
+.light-theme .totals-display li {
+  border-bottom-color: #ddd;
+  color: #333; /* Overrides the white text */
+}
+
+.light-theme .log-item {
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.light-theme .log-code {
+  color: #333;
+}
+.light-theme .log-time {
+  color: #666;
+}
+.light-theme .empty-state {
+  color: #888;
 }
